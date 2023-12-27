@@ -7,7 +7,7 @@ const router = Router();
 router.route("/register").post(
   upload.fields([
     { name: "avatar", maxCount: 1 },
-    { name: "background", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
   ]),
   registerUser
 );

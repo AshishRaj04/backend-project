@@ -1,5 +1,5 @@
 import mongoose, { mongo } from "mongoose";
-import bcrypt from "bcrypt ";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
@@ -28,13 +28,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: [true, "Password is required"],
-      minlength: 8,
+      // minlength: 8,
     },
     refreshToken: {
       type: String,
     },
     avatar: {
-      true: String, // cloudinary url
+      type: String, // cloudinary url
       required: true,
     },
     coverImage: {
@@ -55,14 +55,12 @@ const userSchema = new mongoose.Schema(
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
-  this.password =await bcrypt.hash(this.password, 10, (err, encrypted) => {
-    if (err) return next(err);
-    console.log(encrypted);
-  });
+  this.password =await bcrypt.hash(this.password, 10);
+  next()
 });
 
 // compare incoming password with hashed password in database
-userSchema.methods.isPasswordCorrect = async function (password) {
+userSchema.methods.isPasswordCorrect = async function(password) {
   return await bcrypt.compare(password, this.password);
 };
 
@@ -76,7 +74,7 @@ userSchema.methods.generateAccessToken = function () {
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: ACCESS_TOKEN_EXPIRY,
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     }
   );
 };
@@ -87,7 +85,7 @@ userSchema.methods.generateRefreshToken = function () {
     },
     process.env.REFRESH_TOKEN_SECRET,
     {
-      expiresIn: REFRESH_TOKEN_EXPIRY,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     }
   );
 };
