@@ -1,0 +1,18 @@
+Access Token:
+
+Think of the access token as a short-lived pass, like a ticket to a concert. It grants you access to your resources, but it doesn't last forever, maybe just for a day. After that day, you'd typically need to refresh the access token by logging in again.
+Refresh Token:
+
+Now, for big organizations like Google, they've got a clever trick. They use a refresh token, which acts like a backstage pass that lasts longer (maybe 2 hours or 1 hour). This token is also stored in a database, like a secret key.
+
+If your access token expires, and you try to access something, you'll get a message saying it's expired. Instead of bothering you to log in again, the system can quietly send a request with your refresh token to get a new access token. It's like saying, "Hey, my backstage pass is still valid, can I get a new ticket?"
+
+In the backend, it checks if the refresh token you sent matches the one it has. If they match, it's like reopening your session. It's a bit like logging in again, but behind the scenes. The system then sends you a new access token, like a refreshed ticket.
+
+Why Refresh Tokens Matter:
+
+This dance of tokens is handy because, on the frontend, if there's a 401 error (meaning your access is expired), instead of asking you to log in again, a bit of code can quietly request a refresh using the refresh token.
+
+You don't need to keep entering your credentials. The refresh token does the job behind the scenes, ensuring a smooth and uninterrupted user experience.
+
+So, in a nutshell, access tokens and refresh tokens work together to keep your digital experience seamless, avoiding the hassle of constant logins. Now, armed with this understanding, you're well-prepared for discussions, even in interviews. Access token, refresh token, it's all about making your online interactions smoother.

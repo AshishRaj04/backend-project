@@ -1,7 +1,7 @@
 
 // Import necessary dependencies
 import { Router } from "express";
-import { registerUser, loginUser, logoutUser } from "../controllers/user.controller.js";
+import { registerUser, loginUser, logoutUser , refreshAccessToken } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import verifyJWT from "../middlewares/auth.middleware.js";
 
@@ -38,6 +38,8 @@ router.route("/login").post(loginUser);
  * If the token is valid, the request is passed to the logoutUser function from the user.controller.js file.
  */
 router.route("/logout").post(verifyJWT, logoutUser);
+
+router.route("/refreshToken").get(refreshAccessToken)
 
 // Export the router
 export default router;
