@@ -1,7 +1,15 @@
-
 // Import necessary dependencies
 import { Router } from "express";
-import { registerUser, loginUser, logoutUser , refreshAccessToken } from "../controllers/user.controller.js";
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changePassword,
+  currentUser,
+  updateAvatar,
+  updateCoverImage,
+} from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import verifyJWT from "../middlewares/auth.middleware.js";
 
@@ -17,11 +25,11 @@ const router = Router();
  * The request is then passed to the registerUser function from the user.controller.js file.
  */
 router.route("/register").post(
- upload.fields([
+  upload.fields([
     { name: "avatar", maxCount: 1 },
     { name: "coverImage", maxCount: 1 },
- ]),
- registerUser
+  ]),
+  registerUser
 );
 
 /**
@@ -39,7 +47,24 @@ router.route("/login").post(loginUser);
  */
 router.route("/logout").post(verifyJWT, logoutUser);
 
-router.route("/refreshToken").get(refreshAccessToken)
+router.route("/refreshToken").get(refreshAccessToken);
+
+router.route("/changePassword").post(verifyJWT, changePassword);
+router.route("/getCurrentUser").post(verifyJWT, currentUser);
+router
+  .route("/updateUserAvatar")
+  .post(
+    verifyJWT,
+    upload.fields({ name: "avatar", maxCount: 1 }),
+    updateAvatar
+  );
+router
+  .route("/updateUserCoverImage")
+  .post(
+    verifyJWT,
+    upload.fields({ name: "coverImage", maxCount: 1 }),
+    updateCoverImage
+  );
 
 // Export the router
 export default router;

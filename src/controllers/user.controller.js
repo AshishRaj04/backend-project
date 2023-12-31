@@ -24,10 +24,8 @@ const generateAccessAndRefreshToken = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  
-
   const { username, fullName, email, password } = req.body;
- 
+
   if (
     [username, fullName, email, password].some((entries) =>
       entries.length === 0 ? true : false
@@ -43,7 +41,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
   const coverImageLocalPath = req.files?.coverImage[0]?.path;
-  
+
   console.log(req.files);
   if (!(avatarLocalPath && coverImageLocalPath)) {
     throw new ApiError(400, "Avatar and cover image files are requied ");
@@ -55,7 +53,6 @@ const registerUser = asyncHandler(async (req, res) => {
   if (!(avatar && coverImg)) {
     throw new ApiError(400, "Avatar and cover image files are requied ");
   }
- 
 
   const user = await User.create({
     fullName,
@@ -83,7 +80,6 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
- 
   const { email, username, password } = req.body;
 
   if (!(username || email)) {
@@ -110,7 +106,6 @@ const loginUser = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
 
- 
   const option = {
     httpOnly: true,
     secure: true,
@@ -155,13 +150,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("accessToken", option)
     .clearCookie("refreshToken", option)
-    .json(
-      new ApiResponse(
-        200,
-        {  },
-        "User logged out"
-      )
-    );
+    .json(new ApiResponse(200, {}, "User logged out"));
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -205,4 +194,87 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  if (!(newPassword === confirmPassword)) {
+    throw new ApiError(400, "Password does't match ");
+  }
+  const user = await User.findById(req.user?._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(currentPassword);
+  if (!isPasswordCorrect) {
+    throw new ApiError(403, "Incorrect password");
+  }
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password Changes Successfully"));
+});
+
+const currentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(200, req.user, "current user fetched successfully");
+});
+
+const updateAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing");
+  }
+  const avatarCloudURL = await uploadOnCloudnary(avatarLocalPath);
+
+  if (!avatarCloudURL) {
+    throw new ApiError(500, "Failed to save image on cloudinary");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: { avatar: avatarCloudURL.url },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(201, user, "Avatar updated successfully"));
+});
+
+const updateCoverImage = asyncHandler(async (req, res) => {
+  const coverImgLocalPath = req.file?.path;
+  if (!coverImgLocalPath) {
+    throw new ApiError(400, "Cover Image is missing");
+  }
+  const coverImgURL = await uploadOnCloudnary(coverImgLocalPath);
+
+  if (!coverImgURL) {
+    throw new ApiError(500, "Faild To Save Cover Image On Cloudinary");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        coverImage: coverImgURL.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(201, user, "cover image updated successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changePassword,
+  currentUser,
+  updateAvatar,
+  updateCoverImage,
+};
