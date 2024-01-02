@@ -55,14 +55,14 @@ router
   .route("/updateUserAvatar")
   .post(
     verifyJWT,
-    upload.fields({ name: "avatar", maxCount: 1 }),
+    upload.single("avatar"),
     updateAvatar
   );
 router
   .route("/updateUserCoverImage")
   .post(
     verifyJWT,
-    upload.fields({ name: "coverImage", maxCount: 1 }),
+    upload.single("coverImage"),
     updateCoverImage
   );
 
