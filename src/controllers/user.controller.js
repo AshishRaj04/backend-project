@@ -62,7 +62,7 @@ const registerUser = asyncHandler(async (req, res) => {
     fullName,
     email,
     avatar: avatar.url,
-    coverImg: coverImg.url,
+    coverImage: coverImg.url,
     password,
     username: username.toLowerCase(),
   });
@@ -136,8 +136,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: { 
+        refreshToken: 1, // this removes the field from document
       },
     },
     {
