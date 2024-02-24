@@ -27,6 +27,12 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
+const option = {
+  maxAge: 300000,
+  httpOnly: true,
+  secure: true,
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   const { username, fullName, email, password } = req.body;
 
@@ -110,14 +116,13 @@ const loginUser = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
 
-  const option = {
-    httpOnly: true,
-    secure: true,
-  };
-
   return res
     .status(200)
-    .cookie("accessToken", accessToken, option)
+    .cookie("accessToken", accessToken, {
+      maxAge: 60000,
+      httpOnly: true,
+      secure: true,
+    })
     .cookie("refreshToken", refreshToken, option)
     .json(
       new ApiResponse(
@@ -136,7 +141,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $unset: { 
+      $unset: {
         refreshToken: 1, // this removes the field from document
       },
     },
@@ -144,11 +149,6 @@ const logoutUser = asyncHandler(async (req, res) => {
       new: true,
     }
   );
-
-  const option = {
-    httpOnly: true,
-    secure: true,
-  };
 
   res
     .status(200)
@@ -168,7 +168,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
-    const user = await User.findById(decodedToken._id);
+    const user = await User.findById(decodedToken._id).select(
+      "-password -refreshToken"
+    );
     if (!user) {
       throw new ApiError(401, "Invalid refresh token");
     }
@@ -184,12 +186,16 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     );
     return res
       .status(200)
-      .cookie("accessToken", newAccessToken, options)
+      .cookie("accessToken", newAccessToken, {
+        maxAge: 60000,
+        httpOnly: true,
+        secure: true,
+      })
       .cookie("refreshToken", newRefreshToken, options)
       .json(
         new ApiResponse(
           200,
-          { accessToken: newAccessToken, refreshToken: newRefreshToken },
+          { user},
           "Access token refreshed"
         )
       );
@@ -289,7 +295,7 @@ const updateCoverImage = asyncHandler(async (req, res) => {
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
-  if (!username.trim()) {
+  if (!username?.trim()) {
     throw new ApiError(400, "Username does not exist");
   }
 
@@ -346,9 +352,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
   ]);
 
-  if (channel?.length) {
+  if (!channel?.length) {
     throw new ApiError(404, "channel does not exist");
   }
+  console.log(channel);
 
   return res
     .status(200)
