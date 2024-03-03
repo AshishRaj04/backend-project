@@ -158,7 +158,8 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken = req.cookies.refreshToken;
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
   console.log(incomingRefreshToken);
   if (!incomingRefreshToken) {
     throw new ApiError(401, "unauthorized request");
@@ -168,9 +169,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
-    const user = await User.findById(decodedToken._id).select(
-      "-password -refreshToken"
-    );
+    const user = await User.findById(decodedToken?._id);
     if (!user) {
       throw new ApiError(401, "Invalid refresh token");
     }
@@ -181,21 +180,20 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       httpOnly: true,
       secure: true,
     };
-    const { newAccessToken, newRefreshToken } = generateAccessAndRefreshToken(
-      user._id
-    );
+    const { accessToken, refreshToken } =
+      await generateAccessAndRefreshToken(user._id);
     return res
       .status(200)
-      .cookie("accessToken", newAccessToken, {
+      .cookie("accessToken", accessToken, {
         maxAge: 60000,
         httpOnly: true,
         secure: true,
       })
-      .cookie("refreshToken", newRefreshToken, options)
+      .cookie("refreshToken", refreshToken, options)
       .json(
         new ApiResponse(
           200,
-          { user},
+          { accessToken , refreshToken },
           "Access token refreshed"
         )
       );
@@ -239,11 +237,11 @@ const updateAvatar = asyncHandler(async (req, res) => {
   const previousAvatarURL = currentUser.avatar;
 
   if (previousAvatarURL) {
-    const deletedFile = await deleteFromCloudinary(previousAvatarURL);
+    await deleteFromCloudinary(previousAvatarURL);
   }
   const avatarCloudURL = await uploadOnCloudnary(avatarLocalPath);
 
-  if (!avatarCloudURL) {
+  if (!avatarCloudURL.url) {
     throw new ApiError(500, "Failed to save image on cloudinary");
   }
 
@@ -253,7 +251,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
       $set: { avatar: avatarCloudURL.url },
     },
     { new: true }
-  ).select("-password");
+  ).select("-password -refreshToken");
 
   return res
     .status(200)
@@ -270,11 +268,11 @@ const updateCoverImage = asyncHandler(async (req, res) => {
   const previousCoverImgURL = currentUser.coverImage;
 
   if (previousCoverImgURL) {
-    const deletedFile = await deleteFromCloudinary(previousCoverImgURL);
+    await deleteFromCloudinary(previousCoverImgURL);
   }
   const coverImgURL = await uploadOnCloudnary(coverImgLocalPath);
 
-  if (!coverImgURL) {
+  if (!coverImgURL.url) {
     throw new ApiError(500, "Faild To Save Cover Image On Cloudinary");
   }
 
@@ -286,7 +284,7 @@ const updateCoverImage = asyncHandler(async (req, res) => {
       },
     },
     { new: true }
-  ).select("-password");
+  ).select("-password -refreshToken");
 
   return res
     .status(200)
@@ -400,7 +398,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     },
   ]);
 
-  if (user?.length) {
+  if (!user?.length) {
     throw new ApiError(404, "User does not exist");
   }
 
